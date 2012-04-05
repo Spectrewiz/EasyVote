@@ -18,6 +18,12 @@ namespace EasyVote
         public static string save = "";
         public static List<Player> Players = new List<Player>();
         public static PollList polls;
+
+        public static StandardPoll FindPoll(string name)
+        {
+            return polls.findPoll(name);
+        }
+
         public override string Name
         {
             get { return "Easy Vote"; }
@@ -68,26 +74,25 @@ namespace EasyVote
 
         public void OnInitialize()
         {
-            bool poll = false;
-
-            foreach (Group group in TShock.Groups.groups)
-            {
-                if (group.Name != "superadmin")
-                {
-                    if (group.HasPermission("Poll"))
-                        poll = true;
-                }
-            }
-
-            List<string> permlist = new List<string>();
-            if (!poll)
-                permlist.Add("Poll");
-            TShock.Groups.AddPermissions("trustedadmin", permlist);
-
-            Commands.ChatCommands.Add(new Command("Poll", GetResults, "getvotes", "getresults", "findvotes", "findresults"));
-            Commands.ChatCommands.Add(new Command("Poll", StartPoll, "startpoll"));
+            Commands.ChatCommands.Add(new Command(GetResults, "getvotes", "getresults", "findvotes", "findresults"));
+            Commands.ChatCommands.Add(new Command(StartPoll, "startpoll"));
             Commands.ChatCommands.Add(new Command(Vote, "vote"));
-            SetupConfig();
+            PollReader reader = new PollReader();
+            save = @"tshock\Polls.cfg";
+
+            if (File.Exists(save))
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(polls.polls.Count + " polls have been loaded.");
+                Console.ResetColor();
+            }
+            else
+            {
+                polls = reader.writeFile(save);
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("No polls found! Basic poll file being created. 3 example polls loaded.");
+                Console.ResetColor();
+            }
         }
 
         public void OnUpdate()
@@ -118,50 +123,69 @@ namespace EasyVote
         public void OnChat(messageBuffer msg, int ply, string text, HandledEventArgs e)
         {
         }
-
-        public static void SetupConfig()
-        {
-            PollReader reader = new PollReader();
-            save = Path.Combine(TShockAPI.TShock.SavePath, "Polls.cfg");
-
-            if (File.Exists(save))
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(polls.polls.Count + " polls have been loaded.");
-                Console.ResetColor();
-            }
-            else
-            {
-                polls = reader.writeFile(save);
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("No polls found! Basic poll file being created. 3 example polls loaded.");
-                Console.ResetColor();
-            }
-        }
     #endregion
     #region Commands
         public static bool OpenPoll = false;
         public static string CurrentPoll;
         public static void StartPoll(CommandArgs args)
         {
-            if (args.Parameters.Count < 1)
+            if (args.Player.Group.HasPermission("Poll"))
             {
-
-            }
-            else
-            {
-                string name = args.Parameters[0].ToLower();
-                if (polls.findPoll(name).PollName == name)
+                if (args.Parameters.Count < 1)
                 {
-                    OpenPoll = true;
-                    CurrentPoll = polls.findPoll(name).PollName;
+                    args.Player.SendMessage("Syntax: /startpoll <pollname>", Color.DarkCyan);
+                    args.Player.SendMessage("The poll name should be inside the Polls.cfg file.", Color.DarkCyan);
+                }
+                else
+                {
+                    string name = args.Parameters[0].ToLower();
+                    if (FindPoll(name).PollName == name)
+                    {
+                        OpenPoll = true;
+                        CurrentPoll = FindPoll(name).PollName;
+                    }
                 }
             }
         }
 
         public static void GetResults(CommandArgs args)
         {
-
+            if (args.Player.Group.HasPermission("Poll"))
+            {
+                int i = 0;
+                int x = 0;
+                var currentpoll = FindPoll(CurrentPoll);
+                var listedplayer = Player.GetPlayerByName(args.Player.Name);
+                foreach (Player player in Players)
+                {
+                    if (player.GetVoteResult() != Player.VoteResults.novote)
+                    {
+                        if (player.GetVoteResult() == Player.VoteResults.yes)
+                            i++;
+                        else
+                            x++;
+                    }
+                }
+                args.Player.SendMessage(string.Format("{0} voted yes and {1} voted no.", i, x), Color.DarkCyan);
+                if (i > x)
+                {
+                    switch (currentpoll.DayNight.ToLower())
+                    {
+                        case "day":
+                            Commands.HandleCommand(listedplayer.TSPlayer, "/time day");
+                            break;
+                        case "night":
+                            Commands.HandleCommand(listedplayer.TSPlayer, "/time night");
+                            break;
+                    }
+                    if (currentpoll.Monster != 0)
+                        Commands.HandleCommand(listedplayer.TSPlayer, string.Format("/spawnmob {0}", currentpoll.Monster));
+                }
+                foreach (Player player in Players)
+                {
+                    player.SetVote(Player.VoteResults.novote);
+                }
+            }
         }
 
         public static void Vote(CommandArgs args)
@@ -169,7 +193,7 @@ namespace EasyVote
             if (args.Parameters.Count < 1)
             {
                 args.Player.SendMessage("Current Poll: " + CurrentPoll, Color.DarkCyan);
-                args.Player.SendMessage(polls.findPoll(CurrentPoll).Question, Color.DarkCyan);
+                args.Player.SendMessage(FindPoll(CurrentPoll).Question, Color.DarkCyan);
                 args.Player.SendMessage("Vote Yes or No");
             }
             else if (OpenPoll == true)

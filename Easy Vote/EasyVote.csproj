@@ -69,9 +69,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Config.cs" />
+    <Compile Include="Poll.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="PluginMain.cs" />
+    <Compile Include="PollList.cs" />
+    <Compile Include="PollReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
