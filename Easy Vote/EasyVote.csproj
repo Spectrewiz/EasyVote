@@ -69,7 +69,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Poll.cs" />
+    <Compile Include="StandardPoll.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="PluginMain.cs" />
     <Compile Include="PollList.cs" />

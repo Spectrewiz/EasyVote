@@ -11,7 +11,7 @@ namespace EasyVote
     {
         public PollList writeFile(string file)
         {
-            TextWriter tw = new StreamWriter(file);
+            StreamWriter tw = new StreamWriter(file, true);
 
             PollList pollList = new PollList();
 

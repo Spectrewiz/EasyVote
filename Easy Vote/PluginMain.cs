@@ -41,7 +41,7 @@ namespace EasyVote
 
         public override Version Version
         {
-            get { return new Version(0, 0, 1); }
+            get { return new Version(0, 9, 0); }
         }
 
         public override void Initialize()
@@ -74,14 +74,15 @@ namespace EasyVote
 
         public void OnInitialize()
         {
-            Commands.ChatCommands.Add(new Command(GetResults, "getvotes", "getresults", "findvotes", "findresults"));
-            Commands.ChatCommands.Add(new Command(StartPoll, "startpoll"));
+            Commands.ChatCommands.Add(new Command("Poll", GetResults, "getvotes", "getresults", "findvotes", "findresults"));
+            Commands.ChatCommands.Add(new Command("Poll" ,StartPoll, "startpoll", "startvote"));
             Commands.ChatCommands.Add(new Command(Vote, "vote"));
             PollReader reader = new PollReader();
-            save = @"tshock\Polls.cfg";
+            save = Path.Combine(TShock.SavePath, "Polls.json");
 
             if (File.Exists(save))
             {
+                polls = reader.readFile(save);
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine(polls.polls.Count + " polls have been loaded.");
                 Console.ResetColor();
@@ -126,75 +127,95 @@ namespace EasyVote
     #endregion
     #region Commands
         public static bool OpenPoll = false;
-        public static string CurrentPoll;
+        public static string CurrentPoll = null;
         public static void StartPoll(CommandArgs args)
         {
-            if (args.Player.Group.HasPermission("Poll"))
+            if (args.Parameters.Count < 1)
             {
-                if (args.Parameters.Count < 1)
-                {
-                    args.Player.SendMessage("Syntax: /startpoll <pollname>", Color.DarkCyan);
-                    args.Player.SendMessage("The poll name should be inside the Polls.cfg file.", Color.DarkCyan);
-                }
-                else
+                args.Player.SendMessage("Syntax: /startpoll <pollname>", Color.Cyan);
+                args.Player.SendMessage("The poll names can be found inside the Polls.json file", Color.Cyan);
+            }
+            else
+            {
+                try
                 {
                     string name = args.Parameters[0].ToLower();
-                    if (FindPoll(name).PollName == name)
+                    if (FindPoll(name).PollName != null)
                     {
+                        args.Player.SendMessage(FindPoll(name).PollName + " has been started!", Color.Yellow);
                         OpenPoll = true;
                         CurrentPoll = FindPoll(name).PollName;
+                        foreach (Player player in Players)
+                        {
+                            player.TSPlayer.SendMessage("New poll (" + CurrentPoll + ") has been started! Type /vote for more info!", Color.Cyan);
+                        }
                     }
+                }
+                catch (Exception e)
+                {
+                    args.Player.SendMessage("Cannot find the specified poll \"" + args.Parameters[0] + "\"", Color.Red);
+                    args.Player.SendMessage("Check the Polls.json file to make sure you are using the right poll name.", Color.Red);
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(e.Message);
+                    Console.ResetColor();
                 }
             }
         }
 
         public static void GetResults(CommandArgs args)
         {
-            if (args.Player.Group.HasPermission("Poll"))
+            int i = 0;
+            int x = 0;
+            var currentpoll = FindPoll(CurrentPoll);
+            var listedplayer = Player.GetPlayerByName(args.Player.Name);
+            foreach (Player player in Players)
             {
-                int i = 0;
-                int x = 0;
-                var currentpoll = FindPoll(CurrentPoll);
-                var listedplayer = Player.GetPlayerByName(args.Player.Name);
-                foreach (Player player in Players)
+                if (player.GetVoteResult() != Player.VoteResults.novote)
                 {
-                    if (player.GetVoteResult() != Player.VoteResults.novote)
-                    {
-                        if (player.GetVoteResult() == Player.VoteResults.yes)
-                            i++;
-                        else
-                            x++;
-                    }
-                }
-                args.Player.SendMessage(string.Format("{0} voted yes and {1} voted no.", i, x), Color.DarkCyan);
-                if (i > x)
-                {
-                    switch (currentpoll.DayNight.ToLower())
-                    {
-                        case "day":
-                            Commands.HandleCommand(listedplayer.TSPlayer, "/time day");
-                            break;
-                        case "night":
-                            Commands.HandleCommand(listedplayer.TSPlayer, "/time night");
-                            break;
-                    }
-                    if (currentpoll.Monster != 0)
-                        Commands.HandleCommand(listedplayer.TSPlayer, string.Format("/spawnmob {0}", currentpoll.Monster));
-                }
-                foreach (Player player in Players)
-                {
-                    player.SetVote(Player.VoteResults.novote);
+                    if (player.GetVoteResult() == Player.VoteResults.yes)
+                        i++;
+                    else
+                        x++;
                 }
             }
+            args.Player.SendMessage(string.Format("{0} player(s) voted yes and {1} player(s) voted no.", i, x), Color.Yellow);
+            if (i > x)
+            {
+                switch (currentpoll.DayNight.ToLower())
+                {
+                    case "day":
+                        Commands.HandleCommand(TSServerPlayer.Server, "/time day");
+                        break;
+                    case "night":
+                        Commands.HandleCommand(TSServerPlayer.Server, "/time night");
+                        break;
+                }
+                if (currentpoll.Monster != 0)
+                    Commands.HandleCommand(TSServerPlayer.Server, string.Format("/spawnmob {0}", currentpoll.Monster));
+            }
+            foreach (Player player in Players)
+            {
+                player.SetVote(Player.VoteResults.novote);
+                player.TSPlayer.SendMessage("Poll " + CurrentPoll + " has been closed.", Color.Cyan);
+            }
+            OpenPoll = false;
+            CurrentPoll = null;
         }
 
         public static void Vote(CommandArgs args)
         {
             if (args.Parameters.Count < 1)
             {
-                args.Player.SendMessage("Current Poll: " + CurrentPoll, Color.DarkCyan);
-                args.Player.SendMessage(FindPoll(CurrentPoll).Question, Color.DarkCyan);
-                args.Player.SendMessage("Vote Yes or No");
+                if (OpenPoll)
+                {
+                    args.Player.SendMessage("Current Poll: " + CurrentPoll, Color.Cyan);
+                    args.Player.SendMessage(FindPoll(CurrentPoll).Question, Color.Cyan);
+                    args.Player.SendMessage("Vote yes or no (/vote <yes/no>)", Color.Yellow);
+                }
+                else
+                {
+                    args.Player.SendMessage("No polls available.", Color.Red);
+                }
             }
             else if (OpenPoll == true)
             {
@@ -202,15 +223,15 @@ namespace EasyVote
                 switch (args.Parameters[0].ToLower())
                 {
                     case "yes":
-                        args.Player.SendMessage("You voted Yes", Color.DarkCyan);
+                        args.Player.SendMessage("You voted Yes", Color.Cyan);
                         ListedPlayer.SetVote(Player.VoteResults.yes);
                         break;
                     case "no":
-                        args.Player.SendMessage("You voted No", Color.DarkCyan);
+                        args.Player.SendMessage("You voted No", Color.Cyan);
                         ListedPlayer.SetVote(Player.VoteResults.no);
                         break;
                     default:
-                        args.Player.SendMessage(string.Format("Invalid vote (your vote {0} did not match the possible votes: yes or no)", args.Parameters[0]), Color.Red);
+                        args.Player.SendMessage(string.Format("Invalid vote (your vote \"{0}\" did not match the possible votes: yes or no)", args.Parameters[0]), Color.Red);
                         break;
                 }
             }
