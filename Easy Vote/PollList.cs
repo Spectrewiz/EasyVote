@@ -23,7 +23,7 @@ namespace EasyVote
         {
             foreach (StandardPoll p in polls)
             {
-                if (p.getName() == name)
+                if (p.getName().ToLower() == name.ToLower())
                 {
                     return p;
                 }

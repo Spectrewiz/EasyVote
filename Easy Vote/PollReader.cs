@@ -15,9 +15,11 @@ namespace EasyVote
 
             PollList pollList = new PollList();
 
-            pollList.AddItem(new StandardPoll("Yes/No", "Vote Yes or No.", "none", 0));
-            pollList.AddItem(new StandardPoll("Night/Guardian", "Vote for a dungeon guardian and night time.", "Night", 68));
-            pollList.AddItem(new StandardPoll("Day", "Vote for day time :]", "Day", 0));
+            pollList.AddItem(new StandardPoll("Yes/No", "Vote Yes or No.", "none", new List<Monster> { }, new List<string> { }));
+            pollList.AddItem(new StandardPoll("Day", "Vote for day time :]", "Day", new List<Monster> { }, new List<string> { }));
+            pollList.AddItem(new StandardPoll("Night/Guardian", "Vote for a dungeon guardian and night time.", "Night", new List<Monster> { new Monster(68, 1) }, new List<string> { }));
+            pollList.AddItem(new StandardPoll("MultipleMonsters", "Vote for 3 chaos elementals, 2 blue slimes, and 1 werewolf.", "Night", new List<Monster> { new Monster(120, 3), new Monster(1, 2), new Monster(104, 1) }, new List<string> { }));
+            pollList.AddItem(new StandardPoll("Commands", "Vote for a broadcast, a meteor strike, and a convert corruption.", "none", new List<Monster> { }, new List<string> { "/bc yes outvoted no", "dropmeteor", "convertcorruption" }));
 
             tw.Write(JsonConvert.SerializeObject(pollList, Formatting.Indented));
             tw.Close();

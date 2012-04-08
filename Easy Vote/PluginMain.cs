@@ -36,12 +36,12 @@ namespace EasyVote
 
         public override string Description
         {
-            get { return "Allows users to create polls and other users to vote"; }
+            get { return "Allows users to create polls that other users vote on"; }
         }
 
         public override Version Version
         {
-            get { return new Version(0, 9, 0); }
+            get { return new Version(0, 9, 3); }
         }
 
         public override void Initialize()
@@ -75,23 +75,36 @@ namespace EasyVote
         public void OnInitialize()
         {
             Commands.ChatCommands.Add(new Command("Poll", GetResults, "getvotes", "getresults", "findvotes", "findresults"));
-            Commands.ChatCommands.Add(new Command("Poll" ,StartPoll, "startpoll", "startvote"));
+            Commands.ChatCommands.Add(new Command("Poll", StartPoll, "startpoll", "startvote"));
+            Commands.ChatCommands.Add(new Command("Poll", ReloadPoll, "reloadpolls"));
             Commands.ChatCommands.Add(new Command(Vote, "vote"));
             PollReader reader = new PollReader();
             save = Path.Combine(TShock.SavePath, "Polls.json");
 
             if (File.Exists(save))
             {
-                polls = reader.readFile(save);
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(polls.polls.Count + " polls have been loaded.");
-                Console.ResetColor();
+                try
+                {
+                    polls = reader.readFile(save);
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine(polls.polls.Count + " polls have been loaded.");
+                    Console.ResetColor();
+                }
+                catch (Exception e)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Error in Polls.json file! Check log for more details.");
+                    Console.WriteLine(e.Message);
+                    Console.ResetColor();
+                    Log.Error("--------- Config Exception in EasyVote Config file (Polls.json) ---------");
+                    Log.Error(e.Message);
+                }
             }
             else
             {
                 polls = reader.writeFile(save);
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("No polls found! Basic poll file being created. 3 example polls loaded.");
+                Console.WriteLine("No polls found! Basic poll file being created. 5 example polls loaded.");
                 Console.ResetColor();
             }
         }
@@ -126,6 +139,31 @@ namespace EasyVote
         }
     #endregion
     #region Commands
+        public static void ReloadPoll(CommandArgs args)
+        {
+            try
+            {
+                PollReader reader = new PollReader();
+                if (File.Exists(save))
+                {
+                    polls = reader.readFile(save);
+                    args.Player.SendMessage(polls.polls.Count + " polls have been reloaded.", Color.Yellow);
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine(polls.polls.Count + " polls have been reloaded.");
+                    Console.ResetColor();
+                }
+            }
+            catch (Exception e)
+            {
+                args.Player.SendMessage("Error in Polls.json file! Check log for more details.", Color.Red);
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(e.Message);
+                Console.ResetColor();
+                Log.Error("--------- Config Exception in EasyVote Config file (Polls.json) ---------");
+                Log.Error(e.Message);
+            }
+        }
+
         public static bool OpenPoll = false;
         public static string CurrentPoll = null;
         public static void StartPoll(CommandArgs args)
@@ -181,7 +219,7 @@ namespace EasyVote
             args.Player.SendMessage(string.Format("{0} player(s) voted yes and {1} player(s) voted no.", i, x), Color.Yellow);
             if (i > x)
             {
-                switch (currentpoll.DayNight.ToLower())
+                switch (currentpoll.Time.ToLower())
                 {
                     case "day":
                         Commands.HandleCommand(TSServerPlayer.Server, "/time day");
@@ -190,8 +228,8 @@ namespace EasyVote
                         Commands.HandleCommand(TSServerPlayer.Server, "/time night");
                         break;
                 }
-                if (currentpoll.Monster != 0)
-                    Commands.HandleCommand(TSServerPlayer.Server, string.Format("/spawnmob {0}", currentpoll.Monster));
+                currentpoll.spawnMonsters(TSServerPlayer.Server);
+                currentpoll.handleCommands(TSServerPlayer.Server);
             }
             foreach (Player player in Players)
             {

@@ -5,3 +5,5 @@ C:\Users\Nelson\Desktop\Easy Vote\Easy Vote\obj\Debug\EasyVote.dll
 C:\Users\Nelson\Desktop\Easy Vote\Easy Vote\obj\Debug\EasyVote.pdb
 C:\Users\Nelson\Desktop\Easy Vote\Bin\Debug\EasyVote\EasyVote.dll
 C:\Users\Nelson\Desktop\Easy Vote\Bin\Debug\EasyVote\EasyVote.pdb
+C:\Users\Nelson\Desktop\test server\ServerPlugins\EasyVote.dll
+C:\Users\Nelson\Desktop\test server\ServerPlugins\EasyVote.pdb
