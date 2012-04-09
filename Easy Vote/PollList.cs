@@ -30,5 +30,15 @@ namespace EasyVote
             }
             return null;
         }
+
+        public List<string> getList()
+        {
+            List<string> PollNames = new List<string>();
+            foreach (StandardPoll p in polls)
+            {
+                PollNames.Add(p.PollName);
+            }
+            return PollNames;
+        }
     }
 }

@@ -48,7 +48,6 @@ namespace EasyVote
             yes,
             no,
             novote
-            //maybe so? :P
         }
     }
 }

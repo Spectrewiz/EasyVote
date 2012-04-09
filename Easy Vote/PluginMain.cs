@@ -41,7 +41,7 @@ namespace EasyVote
 
         public override Version Version
         {
-            get { return new Version(0, 9, 3); }
+            get { return new Version(0, 9, 4); }
         }
 
         public override void Initialize()
@@ -171,7 +171,19 @@ namespace EasyVote
             if (args.Parameters.Count < 1)
             {
                 args.Player.SendMessage("Syntax: /startpoll <pollname>", Color.Cyan);
-                args.Player.SendMessage("The poll names can be found inside the Polls.json file", Color.Cyan);
+                args.Player.SendMessage("----- List of Polls -----", Color.Yellow);
+                List<string> pollnames = polls.getList();
+                if (pollnames.Count > 0)
+                {
+                    foreach (string poll in pollnames)
+                    {
+                        args.Player.SendMessage(poll, Color.DarkCyan);
+                    }
+                }
+                else
+                {
+                    args.Player.SendMessage("There are no polls", Color.Red);
+                }
             }
             else
             {
@@ -205,7 +217,6 @@ namespace EasyVote
             int i = 0;
             int x = 0;
             var currentpoll = FindPoll(CurrentPoll);
-            var listedplayer = Player.GetPlayerByName(args.Player.Name);
             foreach (Player player in Players)
             {
                 if (player.GetVoteResult() != Player.VoteResults.novote)
