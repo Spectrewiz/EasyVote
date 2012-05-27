@@ -15,14 +15,16 @@ namespace EasyVote
         public string PollName;
         public string Question;
         public string Time;
+        public bool PublicResults;
         public List<Monster> Monsters;
         public List<string> Commands;
 
-        public StandardPoll(string PollName, string Question, string Time, List<Monster> Monsters, List<string> Commands)
+        public StandardPoll(string PollName, string Question, string Time, bool PublicResults, List<Monster> Monsters, List<string> Commands)
         {
             this.PollName = PollName;
             this.Question = Question;
             this.Time = Time;
+            this.PublicResults = PublicResults;
             this.Monsters = Monsters;
             this.Commands = Commands;
         }
