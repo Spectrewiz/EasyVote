@@ -46,7 +46,7 @@ namespace EasyVote
 
         public override Version Version
         {
-            get { return new Version(0, 9, 6); }
+            get { return new Version(0, 9, 61); }
         }
 
         public override void Initialize()
@@ -396,7 +396,7 @@ namespace EasyVote
             string raw;
             try
             {
-                raw = new WebClient().DownloadString("https://github.com/Spectrewiz/Ticket-System/raw/master/README.txt");
+                raw = new WebClient().DownloadString("https://github.com/Spectrewiz/EasyVote/raw/master/README.txt");
             }
             catch (Exception e)
             {
